@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Catcher</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="page">
+    <section class="game-shell" aria-label="HTML game container">
+      <div class="panel">
+        <div>
+          <p class="eyebrow">HTML Canvas Game</p>
+          <h1>Star Catcher</h1>
+          <p class="subtitle">An atmospheric coding game experiment shaped by daily player feedback and small public updates.</p>
+        </div>
+        <button id="actionButton" class="action-button" type="button">Start Game</button>
+      </div>
+
+      <div class="hud" aria-live="polite">
+        <p>Score <span id="score">0</span></p>
+        <p>Best <span id="bestScore">0</span></p>
+        <p>Status <span id="status">Ready</span></p>
+      </div>
+
+      <div class="canvas-frame">
+        <canvas id="gameCanvas" width="960" height="540" aria-label="Game canvas"></canvas>
+      </div>
+
+      <div class="instructions">
+        <p>Controls: use <code>A / D</code> or the arrow keys, or drag the ship with mouse or touch.</p>
+        <p>This is a vibe-coded game project. I read itch.io feedback often and keep evolving it in public.</p>
+        <p>When uploading to itch, keep <code>index.html</code> at the root of the zip file.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="./game.js"></script>
+</body>
+</html>
