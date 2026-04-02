@@ -28,8 +28,16 @@ Then visit [http://localhost:8000](http://localhost:8000).
 - Click `Start Game` to begin
 - Move with `A / D` or the arrow keys
 - You can also drag the ship with mouse or touch
+- On supported phones, tap `Enable Tilt` to turn on gyroscope steering
 - Catch blue energy orbs to score points
 - Hitting a red meteor ends the run
+
+## Mobile Support
+
+- The layout is portrait-first on phones, while desktop and landscape play still remain supported
+- On mobile, the game switches to a taller playfield for a more natural one-handed feel
+- Tilt control is opt-in so iPhone and other permission-based browsers can request access cleanly
+- If tilt is unavailable or denied, touch drag remains the fallback
 
 ## itch.io Upload
 
@@ -37,7 +45,7 @@ Then visit [http://localhost:8000](http://localhost:8000).
 2. Zip the project files as static web assets.
 3. On itch.io, create a project that is playable in the browser.
 4. Upload the zip and confirm the launch file is `index.html`.
-5. The current game is designed around a `960x540` viewport, which is a safe starting point for embed layouts.
+5. The game uses a `960x540` landscape playfield on wider screens and a `540x960` portrait playfield on phones.
 
 ## Iteration Style
 

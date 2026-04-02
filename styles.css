@@ -48,6 +48,12 @@ body {
   justify-content: space-between;
 }
 
+.panel-actions {
+  min-width: 220px;
+  display: grid;
+  gap: 10px;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: #8cb6ff;
@@ -86,6 +92,37 @@ h1 {
   transform: translateY(-1px);
 }
 
+.secondary-button {
+  border: 1px solid rgba(139, 233, 255, 0.35);
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #dff7ff;
+  background: rgba(12, 29, 56, 0.85);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.secondary-button:hover,
+.secondary-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(139, 233, 255, 0.65);
+}
+
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.motion-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #a9bddf;
+}
+
 .hud {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -111,6 +148,7 @@ canvas {
   display: block;
   width: 100%;
   height: auto;
+  max-height: 78vh;
   border-radius: 12px;
   background: linear-gradient(180deg, #0c1d38 0%, #091121 100%);
   touch-action: none;
@@ -130,7 +168,7 @@ code {
 
 @media (max-width: 720px) {
   .page {
-    padding: 14px;
+    padding: 10px;
   }
 
   .panel {
@@ -144,5 +182,34 @@ code {
 
   .action-button {
     width: 100%;
+  }
+
+  .secondary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
+  .game-shell {
+    width: min(100%, 560px);
+    gap: 12px;
+  }
+
+  .panel,
+  .hud,
+  .instructions,
+  .canvas-frame {
+    border-radius: 14px;
+  }
+
+  .panel,
+  .hud,
+  .instructions {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  canvas {
+    max-height: 68vh;
   }
 }

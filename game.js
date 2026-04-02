@@ -4,9 +4,9 @@ const scoreEl = document.getElementById("score");
 const bestScoreEl = document.getElementById("bestScore");
 const statusEl = document.getElementById("status");
 const actionButton = document.getElementById("actionButton");
+const motionButton = document.getElementById("motionButton");
+const motionHint = document.getElementById("motionHint");
 
-const GAME_WIDTH = canvas.width;
-const GAME_HEIGHT = canvas.height;
 const STORAGE_KEY = "star-catcher-best-score";
 
 const keys = {
@@ -23,11 +23,22 @@ const state = {
   lastFrame: 0,
   pointerActive: false,
   stars: [],
+  world: {
+    width: canvas.width,
+    height: canvas.height,
+    isPortrait: false,
+  },
+  motion: {
+    supported: typeof window.DeviceOrientationEvent !== "undefined",
+    enabled: false,
+    permissionGranted: false,
+    tilt: 0,
+  },
   player: {
     width: 92,
     height: 24,
-    x: GAME_WIDTH / 2 - 46,
-    y: GAME_HEIGHT - 56,
+    x: canvas.width / 2 - 46,
+    y: canvas.height - 56,
     speed: 460,
   },
 };
@@ -55,7 +66,9 @@ function resetGame() {
   state.spawnTimer = 0;
   state.pointerActive = false;
   state.stars = [];
-  state.player.x = GAME_WIDTH / 2 - state.player.width / 2;
+  state.motion.tilt = 0;
+  state.player.x = state.world.width / 2 - state.player.width / 2;
+  state.player.y = state.world.height - (state.world.isPortrait ? 84 : 56);
   updateHud();
 }
 
@@ -97,7 +110,7 @@ function spawnStar() {
   state.stars.push({
     kind,
     radius,
-    x: randomBetween(radius, GAME_WIDTH - radius),
+    x: randomBetween(radius, state.world.width - radius),
     y: -radius,
     speed: kind === "danger" ? speedBase + 70 : speedBase,
     drift: randomBetween(-45, 45),
@@ -106,15 +119,23 @@ function spawnStar() {
 }
 
 function updatePlayer(deltaSeconds) {
+  let direction = 0;
+
   if (keys.left) {
-    state.player.x -= state.player.speed * deltaSeconds;
+    direction -= 1;
   }
 
   if (keys.right) {
-    state.player.x += state.player.speed * deltaSeconds;
+    direction += 1;
   }
 
-  state.player.x = clamp(state.player.x, 0, GAME_WIDTH - state.player.width);
+  if (state.motion.enabled && !state.pointerActive) {
+    direction += state.motion.tilt;
+  }
+
+  direction = clamp(direction, -1.25, 1.25);
+  state.player.x += direction * state.player.speed * deltaSeconds;
+  state.player.x = clamp(state.player.x, 0, state.world.width - state.player.width);
 }
 
 function updateStars(deltaSeconds) {
@@ -140,7 +161,7 @@ function updateStars(deltaSeconds) {
       continue;
     }
 
-    if (star.y - star.radius <= GAME_HEIGHT) {
+    if (star.y - star.radius <= state.world.height) {
       nextStars.push(star);
     }
   }
@@ -175,16 +196,16 @@ function checkCollision(star, player) {
 }
 
 function renderBackground() {
-  const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+  const gradient = ctx.createLinearGradient(0, 0, 0, state.world.height);
   gradient.addColorStop(0, "#0d2040");
   gradient.addColorStop(1, "#071120");
 
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+  ctx.fillRect(0, 0, state.world.width, state.world.height);
 
   for (let index = 0; index < 70; index += 1) {
-    const x = ((index * 137.5) % GAME_WIDTH);
-    const y = ((index * 89.3 + state.elapsed * 8) % GAME_HEIGHT);
+    const x = ((index * 137.5) % state.world.width);
+    const y = ((index * 89.3 + state.elapsed * 8) % state.world.height);
     const size = index % 3 === 0 ? 2 : 1;
 
     ctx.fillStyle = index % 4 === 0 ? "rgba(139, 233, 255, 0.9)" : "rgba(255, 255, 255, 0.7)";
@@ -281,25 +302,25 @@ function renderOverlay() {
   }
 
   ctx.fillStyle = "rgba(3, 8, 15, 0.58)";
-  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+  ctx.fillRect(0, 0, state.world.width, state.world.height);
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#f7fbff";
   ctx.font = "700 42px Arial";
-  ctx.fillText(state.mode === "start" ? "Star Catcher" : "Game Over", GAME_WIDTH / 2, 180);
+  ctx.fillText(state.mode === "start" ? "Star Catcher" : "Game Over", state.world.width / 2, state.world.isPortrait ? 260 : 180);
 
   ctx.font = "400 24px Arial";
   const message = state.mode === "start"
     ? "A vibe-coded experiment: I update this game in public from daily player feedback."
     : `You scored ${state.score}. Press restart for another run.`;
-  ctx.fillText(message, GAME_WIDTH / 2, 225);
+  wrapText(message, state.world.width / 2, state.world.isPortrait ? 320 : 225, state.world.width * 0.72, 34);
 
   ctx.font = "400 18px Arial";
   ctx.fillStyle = "#8cb6ff";
   const supportText = state.mode === "start"
-    ? "Catch blue energy, avoid red meteors, and tell me what to improve next."
-    : "Keyboard, mouse, and touch are supported.";
-  ctx.fillText(supportText, GAME_WIDTH / 2, 260);
+    ? "Catch blue energy, avoid red meteors, and try tilt controls on mobile."
+    : "Keyboard, touch, and optional tilt controls are supported.";
+  wrapText(supportText, state.world.width / 2, state.world.isPortrait ? 396 : 260, state.world.width * 0.72, 28);
 }
 
 function render() {
@@ -324,8 +345,8 @@ function frame(timestamp) {
 
 function movePlayerTo(clientX) {
   const rect = canvas.getBoundingClientRect();
-  const relativeX = ((clientX - rect.left) / rect.width) * GAME_WIDTH;
-  state.player.x = clamp(relativeX - state.player.width / 2, 0, GAME_WIDTH - state.player.width);
+  const relativeX = ((clientX - rect.left) / rect.width) * state.world.width;
+  state.player.x = clamp(relativeX - state.player.width / 2, 0, state.world.width - state.player.width);
 }
 
 function clamp(value, min, max) {
@@ -334,6 +355,131 @@ function clamp(value, min, max) {
 
 function randomBetween(min, max) {
   return Math.random() * (max - min) + min;
+}
+
+function wrapText(text, x, y, maxWidth, lineHeight) {
+  const words = text.split(" ");
+  let line = "";
+  let lineIndex = 0;
+
+  for (const word of words) {
+    const testLine = line ? `${line} ${word}` : word;
+    const measuredWidth = ctx.measureText(testLine).width;
+
+    if (measuredWidth > maxWidth && line) {
+      ctx.fillText(line, x, y + lineIndex * lineHeight);
+      line = word;
+      lineIndex += 1;
+    } else {
+      line = testLine;
+    }
+  }
+
+  if (line) {
+    ctx.fillText(line, x, y + lineIndex * lineHeight);
+  }
+}
+
+function setGameSize(width, height, isPortrait) {
+  const previousWidth = state.world.width;
+  const previousHeight = state.world.height;
+  const previousCenter = state.player.x + state.player.width / 2;
+
+  canvas.width = width;
+  canvas.height = height;
+
+  state.world.width = width;
+  state.world.height = height;
+  state.world.isPortrait = isPortrait;
+
+  state.player.width = isPortrait ? 116 : 92;
+  state.player.height = isPortrait ? 28 : 24;
+  state.player.speed = isPortrait ? 520 : 460;
+  state.player.y = height - (isPortrait ? 84 : 56);
+
+  const widthRatio = previousWidth ? previousCenter / previousWidth : 0.5;
+  state.player.x = clamp(widthRatio * width - state.player.width / 2, 0, width - state.player.width);
+
+  if (previousWidth && previousHeight) {
+    for (const star of state.stars) {
+      star.x = (star.x / previousWidth) * width;
+      star.y = (star.y / previousHeight) * height;
+    }
+  }
+}
+
+function resizeGameForViewport() {
+  const shouldUsePortrait = window.innerWidth <= 720 && window.innerHeight > window.innerWidth;
+  const nextWidth = shouldUsePortrait ? 540 : 960;
+  const nextHeight = shouldUsePortrait ? 960 : 540;
+
+  setGameSize(nextWidth, nextHeight, shouldUsePortrait);
+  updateMotionUi();
+}
+
+function handleDeviceOrientation(event) {
+  const gamma = Number.isFinite(event.gamma) ? event.gamma : 0;
+  state.motion.tilt = clamp(gamma / 25, -1, 1);
+}
+
+function updateMotionUi(message) {
+  if (!state.motion.supported) {
+    motionButton.disabled = true;
+    motionButton.textContent = "Tilt Unavailable";
+    motionHint.textContent = message || "Tilt controls are unavailable here. Touch and keyboard still work.";
+    return;
+  }
+
+  motionButton.disabled = false;
+  motionButton.textContent = state.motion.enabled ? "Disable Tilt" : "Enable Tilt";
+
+  if (message) {
+    motionHint.textContent = message;
+  } else if (state.motion.enabled) {
+    motionHint.textContent = "Tilt is active. Hold your phone upright and gently lean left or right.";
+  } else if (state.world.isPortrait) {
+    motionHint.textContent = "Portrait mode is active. Enable tilt or keep using touch drag.";
+  } else {
+    motionHint.textContent = "Tilt works best on phones in portrait mode, but touch and keyboard remain available.";
+  }
+}
+
+async function toggleMotionControls() {
+  if (!state.motion.supported) {
+    updateMotionUi("Tilt controls are unavailable in this browser.");
+    return;
+  }
+
+  if (state.motion.enabled) {
+    state.motion.enabled = false;
+    state.motion.tilt = 0;
+    updateMotionUi("Tilt disabled. You can still use touch drag or keyboard controls.");
+    return;
+  }
+
+  try {
+    const needsPermissionRequest = typeof window.DeviceOrientationEvent !== "undefined"
+      && typeof window.DeviceOrientationEvent.requestPermission === "function";
+
+    if (needsPermissionRequest) {
+      const permission = await window.DeviceOrientationEvent.requestPermission();
+
+      if (permission !== "granted") {
+        updateMotionUi("Tilt permission was not granted. Touch and keyboard still work.");
+        return;
+      }
+    }
+
+    if (!state.motion.permissionGranted) {
+      window.addEventListener("deviceorientation", handleDeviceOrientation);
+      state.motion.permissionGranted = true;
+    }
+
+    state.motion.enabled = true;
+    updateMotionUi();
+  } catch (error) {
+    updateMotionUi("Tilt could not be enabled. Touch and keyboard still work.");
+  }
 }
 
 function roundRect(context, x, y, width, height, radius) {
@@ -351,6 +497,9 @@ function roundRect(context, x, y, width, height, radius) {
 }
 
 actionButton.addEventListener("click", startGame);
+motionButton.addEventListener("click", () => {
+  toggleMotionControls();
+});
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
@@ -391,6 +540,10 @@ window.addEventListener("pointerup", () => {
   state.pointerActive = false;
 });
 
+window.addEventListener("resize", resizeGameForViewport);
+
+resizeGameForViewport();
 updateHud();
+updateMotionUi();
 render();
 window.requestAnimationFrame(frame);

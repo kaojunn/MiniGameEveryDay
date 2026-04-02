@@ -15,7 +15,11 @@
           <h1>Star Catcher</h1>
           <p class="subtitle">An atmospheric coding game experiment shaped by daily player feedback and small public updates.</p>
         </div>
-        <button id="actionButton" class="action-button" type="button">Start Game</button>
+        <div class="panel-actions">
+          <button id="actionButton" class="action-button" type="button">Start Game</button>
+          <button id="motionButton" class="secondary-button" type="button">Enable Tilt</button>
+          <p id="motionHint" class="motion-hint">Tilt controls are optional and best on phones in portrait mode.</p>
+        </div>
       </div>
 
       <div class="hud" aria-live="polite">
@@ -29,7 +33,7 @@
       </div>
 
       <div class="instructions">
-        <p>Controls: use <code>A / D</code> or the arrow keys, or drag the ship with mouse or touch.</p>
+        <p>Controls: use <code>A / D</code>, the arrow keys, drag with touch, or enable tilt controls on mobile.</p>
         <p>This is a vibe-coded game project. I read itch.io feedback often and keep evolving it in public.</p>
         <p>When uploading to itch, keep <code>index.html</code> at the root of the zip file.</p>
       </div>
